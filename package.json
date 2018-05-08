@@ -1,0 +1,9 @@
+{
+  "name": "hoya-coin",
+  "version": "1.0.0",
+  "description": "HoYa's Coin application with JavaScript.",
+  "main": "src/server.js",
+  "repository": "https://github.com/llHoYall/HoYaCoin_JavaScript",
+  "author": "llHoYall <hoya128@gmail.com>",
+  "license": "MIT"
+}

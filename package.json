@@ -5,5 +5,8 @@
   "main": "src/server.js",
   "repository": "https://github.com/llHoYall/HoYaCoin_JavaScript",
   "author": "llHoYall <hoya128@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "crypto-js": "^3.1.9-1"
+  }
 }

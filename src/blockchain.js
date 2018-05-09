@@ -22,6 +22,8 @@ let blockchain = [genesisBlocl];
 
 const getLastBlock = () => blockchain[blockchain.length - 1];
 
+const getBlockchain = () => blockchain;
+
 const getTimestamp = () => new Date().getTime() / 1000;
 
 const createHash = (index, prev_hash, timestamp, data) =>
@@ -97,4 +99,23 @@ const isChainValid = candidate_chain => {
     }
   }
   return true;
+};
+
+const replaceChain = candidate_chain => {
+  if (
+    isChainValid(candidate_chain) &&
+    candidate_chain.length > getBlockchain().length
+  ) {
+    getBlockchain = candidate_chain;
+    return true;
+  }
+  return false;
+};
+
+const addBlockToChain = candidate_block => {
+  if (isNewBlockValid(candidate_block, getLastBlock())) {
+    getBlockchain().push(candidate_block);
+    return true;
+  }
+  return false;
 };

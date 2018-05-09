@@ -18,7 +18,7 @@ const genesisBlock = new Block(
   "This is a genesis block."
 );
 
-let blockchain = [genesisBlocl];
+let blockchain = [genesisBlock];
 
 const getLastBlock = () => blockchain[blockchain.length - 1];
 
@@ -48,6 +48,7 @@ const createNewBlock = data => {
     new_timestamp,
     data
   );
+  addBlockToChain(new_block);
   return new_block;
 };
 
@@ -118,4 +119,9 @@ const addBlockToChain = candidate_block => {
     return true;
   }
   return false;
+};
+
+module.exports = {
+  getBlockchain,
+  createNewBlock
 };

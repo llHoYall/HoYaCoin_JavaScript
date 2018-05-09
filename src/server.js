@@ -5,7 +5,7 @@ const blockchain = require("./blockchain");
 const P2P = require("./p2p");
 
 const { getBlockchain, createNewBlock } = blockchain;
-const { startP2PServer } = P2P;
+const { startP2PServer, connectToPeers } = P2P;
 
 // MAC, Linux
 // $ export HTTP_PORT = 7000
@@ -30,6 +30,14 @@ app.post("/blocks", (req, res) => {
   } = req;
   const new_block = createNewBlock(data);
   res.send(new_block);
+});
+
+app.post("/peers", (req, res) => {
+  const {
+    body: { peer }
+  } = req;
+  connectToPeers(peer);
+  res.send();
 });
 
 const server = app.listen(PORT, () =>

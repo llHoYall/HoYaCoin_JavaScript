@@ -20,7 +20,7 @@ const genesisBlock = new Block(
   0,
   "4DF9140CE289EF9596AFA964C082633D1AC84F2C7EA83F2C8E70FDD6160B8FC1",
   null,
-  1525783768553,
+  1526043802,
   "This is a genesis block.",
   0,
   0
@@ -32,7 +32,7 @@ const getNewestBlock = () => blockchain[blockchain.length - 1];
 
 const getBlockchain = () => blockchain;
 
-const getTimestamp = () => new Date().getTime() / 1000;
+const getTimestamp = () => Math.round(new Date().getTime() / 1000);
 
 const createHash = (index, prev_hash, timestamp, data, difficulty, nonce) =>
   CryptoJS.SHA256(
@@ -44,7 +44,7 @@ const createNewBlock = data => {
   const new_block_index = prev_block.index + 1;
   const new_timestamp = getTimestamp();
   const difficulty = findDifficulty();
-  const new_block = new Block(
+  const new_block = findBlock(
     new_block_index,
     prev_block.hash,
     new_timestamp,
@@ -70,7 +70,7 @@ const findDifficulty = () => {
 
 const calculateNewDifficulty = (newest_block, blockchain) => {
   const last_calculated_block =
-    blockchain[blockchain.lenth - DIFFICULTY_ADJUSTMENT_INTERVAL];
+    blockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
   const timeExpected =
     BLOCK_GENERATION_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
   const timeTaken = newest_block.timestamp - last_calculated_block.timestamp;
@@ -126,6 +126,13 @@ const getBlockHash = block =>
     block.nonce
   );
 
+const isTimeStampValid = (new_block, old_block) => {
+  return (
+    old_block.timestamp - 60 < new_block.timestamp &&
+    new_block.timestamp - 60 < getTimestamp()
+  );
+};
+
 const isBlockValid = (candidate_block, latest_block) => {
   if (!isBlockStructureValid(candidate_block)) {
     console.log("The candidate block structure is not valid");
@@ -140,6 +147,9 @@ const isBlockValid = (candidate_block, latest_block) => {
     return false;
   } else if (candidate_block.hash !== getBlockHash(candidate_block)) {
     console.log("The hash of this block is invalid");
+    return false;
+  } else if (!isTimeStampValid(candidate_block, latest_block)) {
+    console.log("The timestamp of this block is dodgy");
     return false;
   }
   return true;

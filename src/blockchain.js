@@ -4,7 +4,7 @@ const Wallet = require("./wallet");
 const Transactions = require("./transactions");
 
 const { getBalance, getPublicFromWallet } = Wallet;
-const { createCoinbaseTx } = Transactions;
+const { createCoinbaseTx, processTxs } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -210,23 +210,35 @@ const replaceChain = candidate_chain => {
     isChainValid(candidate_chain) &&
     sumDifficulty(candidate_chain) > sumDifficulty(getBlockchain())
   ) {
-    getBlockchain = candidate_chain;
+    getBlockchain() = candidate_chain;
     return true;
+  } else {
+    return false;
   }
-  return false;
 };
 
 const addBlockToChain = candidate_block => {
   if (isBlockValid(candidate_block, getNewestBlock())) {
-    getBlockchain().push(candidate_block);
+    const processed_txs = processTxs(
+      candidate_block.data,
+      utx_outs,
+      candidate_block.index
+    );
+    if (processed_txs === null) {
+      console.log("Couldn't process transactions");
+      return false;
+    } else {
+      blockchain.push(candidate_block);
+      utx_outs = processed_txs;
+      return true;
+    }
     return true;
+  } else {
+    return false;
   }
-  return false;
 };
 
-const getAccountBalance = () => {
-  getBalance(getPublicFromWallet(), utx_outs);
-};
+const getAccountBalance = () => getBalance(getPublicFromWallet(), utx_outs);
 
 module.exports = {
   getBlockchain,

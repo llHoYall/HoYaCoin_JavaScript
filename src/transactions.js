@@ -1,5 +1,6 @@
 const CryptoJS = require("crypto-js");
 const EC = require("elliptic").ec;
+const _ = require("lodash");
 const utils = require("./utils");
 
 const COINBASE_AMOUNT = 50;
@@ -74,17 +75,18 @@ const getPublicKey = private_key => {
 
 const updateUTxOuts = (new_txs, utx_out_list) => {
   const new_utx_outs = new_txs
-    .map(tx => {
-      tx.txOuts.map((tx_out, index) => {
-        new UTxOut(tx.id, index, tx_out.address, tx_out.amount);
-      });
-    })
+    .map(tx =>
+      tx.tx_outs.map(
+        (tx_out, index) =>
+          new UTxOut(tx.id, index, tx_out.address, tx_out.amount)
+      )
+    )
     .reduce((a, b) => a.concat(b), []);
 
   const spent_tx_outs = new_txs
-    .map(tx => tx.txIns)
+    .map(tx => tx.tx_ins)
     .reduce((a, b) => a.concat(b), [])
-    .map(txIn => new UTxOut(txIn.tx_out_id, txIn.tx_out_index, "", 0));
+    .map(tx_in => new UTxOut(tx_in.tx_out_id, tx_in.tx_out_index, "", 0));
 
   const resulting_utx_outs = utx_out_list
     .filter(
@@ -247,11 +249,58 @@ const createCoinbaseTx = (address, block_index) => {
   const tx = new Transaction();
   const tx_in = new TxIn();
   tx_in.signature = "";
-  tx_in.tx_out_id = block_index;
+  tx_in.tx_out_id = "";
+  tx_in.tx_out_index = block_index;
   tx.tx_ins = [tx_in];
   tx.tx_outs = [new TxOut(address, COINBASE_AMOUNT)];
   tx.id = getTxId(tx);
   return tx;
+};
+
+const hasDuplicates = tx_ins => {
+  const groups = _.countBy(
+    tx_ins,
+    tx_in => tx_in.tx_out_id + tx_in.tx_out_index
+  );
+  return _(groups)
+    .map(value => {
+      if (value > 1) {
+        console.log("Found a duplicated tx_in");
+        return true;
+      } else {
+        return false;
+      }
+    })
+    .includes(true);
+};
+
+const validateBlockTxs = (txs, utx_out_list, block_index) => {
+  const coinbase_tx = txs[0];
+  if (!validateCoinbaseTx(coinbase_tx, block_index)) {
+    console.log("Coinbase tx is invalid");
+  }
+
+  const tx_ins = _(txs)
+    .map(tx => tx.tx_ins)
+    .flatten()
+    .value();
+
+  if (hasDuplicates(tx_ins)) {
+    console.log("Found duplicated tx_ins");
+    return false;
+  }
+
+  const non_coinbase_txs = txs.slice(1);
+  return non_coinbase_txs
+    .map(tx => validateTx(tx, utx_out_list))
+    .reduce((a, b) => a + b, true);
+};
+
+const processTxs = (txs, utx_out_list, block_index) => {
+  if (!validateBlockTxs(txs, utx_out_list, block_index)) {
+    return null;
+  }
+  return updateUTxOuts(txs, utx_out_list);
 };
 
 module.exports = {
@@ -261,5 +310,6 @@ module.exports = {
   TxIn,
   Transaction,
   TxOut,
-  createCoinbaseTx
+  createCoinbaseTx,
+  processTxs
 };

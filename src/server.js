@@ -3,9 +3,11 @@ const bodyParser = require("body-parser");
 const morgan = require("morgan");
 const blockchain = require("./blockchain");
 const P2P = require("./p2p");
+const Wallet = require("./wallet");
 
-const { getBlockchain, createNewBlock } = blockchain;
+const { getBlockchain, createNewBlock, getAccountBalance } = blockchain;
 const { startP2PServer, connectToPeers } = P2P;
+const { initWallet } = Wallet;
 
 // MAC, Linux
 // $ export HTTP_PORT = 7000
@@ -20,17 +22,15 @@ const app = express();
 app.use(bodyParser.json());
 app.use(morgan("combined"));
 
-app.get("/blocks", (req, res) => {
-  res.send(getBlockchain());
-});
-
-app.post("/blocks", (req, res) => {
-  const {
-    body: { data }
-  } = req;
-  const new_block = createNewBlock(data);
-  res.send(new_block);
-});
+app
+  .route("/blocks")
+  .get((req, res) => {
+    res.send(getBlockchain());
+  })
+  .post((req, res) => {
+    const new_block = createNewBlock();
+    res.send(new_block);
+  });
 
 app.post("/peers", (req, res) => {
   const {
@@ -40,8 +40,14 @@ app.post("/peers", (req, res) => {
   res.send();
 });
 
+app.get("/me/balance", (req, res) => {
+  const balance = getAccountBalance();
+  res.send({ balance });
+});
+
 const server = app.listen(PORT, () =>
   console.log(`HoYaCoin HTTP server running on ${PORT}`)
 );
 
+initWallet();
 startP2PServer(server);

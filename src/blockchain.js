@@ -1,5 +1,10 @@
 const CryptoJS = require("crypto-js");
 const hexToBinary = require("hex-to-binary");
+const Wallet = require("./wallet");
+const Transactions = require("./transactions");
+
+const { getBalance, getPublicFromWallet } = Wallet;
+const { createCoinbaseTx } = Transactions;
 
 const BLOCK_GENERATION_INTERVAL = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
@@ -28,18 +33,29 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
+let utx_outs = [];
+
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 
-const getBlockchain = () => blockchain;
-
 const getTimestamp = () => Math.round(new Date().getTime() / 1000);
+
+const getBlockchain = () => blockchain;
 
 const createHash = (index, prev_hash, timestamp, data, difficulty, nonce) =>
   CryptoJS.SHA256(
     index + prev_hash + timestamp + JSON.stringify(data) + difficulty + nonce
   ).toString();
 
-const createNewBlock = data => {
+const createNewBlock = () => {
+  const coinbase_tx = createCoinbaseTx(
+    getPublicFromWallet(),
+    getNewestBlock().index + 1
+  );
+  const block_data = [coinbase_tx];
+  return createNewRawBlock(block_data);
+};
+
+const createNewRawBlock = data => {
   const prev_block = getNewestBlock();
   const new_block_index = prev_block.index + 1;
   const new_timestamp = getTimestamp();
@@ -161,7 +177,7 @@ const isBlockStructureValid = block => {
     typeof block.hash === "string" &&
     typeof block.prev_hash === "string" &&
     typeof block.timestamp === "number" &&
-    typeof block.data === "string"
+    typeof block.data === "object"
   );
 };
 
@@ -208,11 +224,16 @@ const addBlockToChain = candidate_block => {
   return false;
 };
 
+const getAccountBalance = () => {
+  getBalance(getPublicFromWallet(), utx_outs);
+};
+
 module.exports = {
   getBlockchain,
   getNewestBlock,
   createNewBlock,
   isBlockStructureValid,
   addBlockToChain,
-  replaceChain
+  replaceChain,
+  getAccountBalance
 };

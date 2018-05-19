@@ -54,7 +54,7 @@ const findAmountInUTxOuts = (amount_needed, my_utx_outs) => {
   const included_utx_outs = [];
   for (const my_utx_out of my_utx_outs) {
     included_utx_outs.push(my_utx_out);
-    cur_amount = cur_amount = my_utx_out.amount;
+    cur_amount = cur_amount + my_utx_out.amount;
     if (cur_amount >= amount_needed) {
       const left_over_amount = cur_amount - amount_needed;
       return {
@@ -63,40 +63,65 @@ const findAmountInUTxOuts = (amount_needed, my_utx_outs) => {
       };
     }
   }
-  console.log("Not enough founds");
+  throw Error("Not enough founds");
   return false;
 };
 
-const createTxOut = (recv_addr, my_addr, amount, left_over_amount) => {
+const createTxOuts = (recv_addr, my_addr, amount, left_over_amount) => {
   const recv_tx_out = new TxOut(recv_addr, amount);
   if (left_over_amount === 0) {
     return [recv_tx_out];
   } else {
     const left_over_tx_out = new TxOut(my_addr, left_over_amount);
-    return [recv_addr, left_over_amount];
+    return [recv_tx_out, left_over_tx_out];
   }
 };
 
-const createTx = (recv_addr, amount, private_key, utx_out_list) => {
+const filterUTxOutsFromMempool = (utx_out_list, mempool) => {
+  const tx_ins = _(mempool)
+    .map(tx => tx.tx_ins)
+    .flatten()
+    .value();
+
+  const removables = [];
+
+  for (const utx_out of utx_out_list) {
+    const tx_in = _.find(
+      tx_ins,
+      tx_in =>
+        tx_in.tx_out_id === utx_out.tx_out_id &&
+        tx_in.tx_out_index === utx_out.tx_out_index
+    );
+    if (tx_in !== undefined) {
+      removables.push(utx_out);
+    }
+  }
+  return _.without(utx_out_list, ...removables);
+};
+
+const createTx = (recv_addr, amount, private_key, utx_out_list, mempool) => {
   const my_addr = getPublicKey(private_key);
   const my_utx_outs = utx_out_list.filter(utx_o => utx_o.address === my_addr);
 
+  const filtered_utx_outs = filterUTxOutsFromMempool(my_utx_outs, mempool);
+
   const { included_utx_outs, left_over_amount } = findAmountInUTxOuts(
     amount,
-    my_utx_outs
+    filtered_utx_outs
   );
 
   const toUnsignedTxIn = utx_out => {
     const tx_in = new TxIn();
     tx_in.tx_out_id = utx_out.tx_out_id;
     tx_in.tx_out_index = utx_out.tx_out_index;
+    return tx_in;
   };
 
   const unsigned_tx_ins = included_utx_outs.map(toUnsignedTxIn);
 
   const tx = new Transaction();
   tx.tx_ins = unsigned_tx_ins;
-  tx.tx_outs = createTxOut(recv_addr, my_addr, amount, left_over_amount);
+  tx.tx_outs = createTxOuts(recv_addr, my_addr, amount, left_over_amount);
   tx.id = getTxId(tx);
   tx.tx_ins = tx.tx_ins.map((tx_in, index) => {
     tx_in.signature = signTxIn(tx, index, private_key, utx_out_list);
@@ -108,5 +133,7 @@ const createTx = (recv_addr, amount, private_key, utx_out_list) => {
 module.exports = {
   initWallet,
   getBalance,
-  getPublicFromWallet
+  getPublicFromWallet,
+  getPrivateFromWallet,
+  createTx
 };

@@ -29,14 +29,16 @@ class UTxOut {
 
 const getTxId = tx => {
   const tx_in_content = tx.tx_ins
-    .map(tx_in => tx_in.utx_out_id + tx_in.utx_out_index)
+    .map(tx_in => tx_in.tx_out_id + tx_in.tx_out_index)
     .reduce((a, b) => a + b, "");
 
   const tx_out_content = tx.tx_outs
     .map(tx_out => tx_out.address + tx_out.amount)
     .reduce((a, b) => a + b, "");
 
-  return CryptoJS.SHA256(tx_in_content + tx_out_content).toString();
+  return CryptoJS.SHA256(
+    tx_in_content + tx_out_content + tx.timestamp
+  ).toString();
 };
 
 const findUTxOut = (tx_out_id, tx_out_index, utx_out_list) => {
@@ -47,14 +49,15 @@ const findUTxOut = (tx_out_id, tx_out_index, utx_out_list) => {
 };
 
 const signTxIn = (tx, tx_in_index, private_key, utx_out_list) => {
-  const tx_in = tx.txIns[tx_in_index];
+  const tx_in = tx.tx_ins[tx_in_index];
   const data_to_sign = tx.id;
   const referenced_utx_out = findUTxOut(
     tx_in.tx_out_id,
-    tx.tx_out_index,
+    tx_in.tx_out_index,
     utx_out_list
   );
-  if (referenced_utx_out === null) {
+  if (referenced_utx_out === null || referenced_utx_out === undefined) {
+    throw Error("Couldn't find the referenced_utx_out, not signing");
     return;
   }
   const referenced_address = referenced_utx_out.address;
@@ -99,12 +102,16 @@ const updateUTxOuts = (new_txs, utx_out_list) => {
 
 const isTxInStructureValid = tx_in => {
   if (tx_in === null) {
-    return false;
-  } else if (typeof tx_in.tx_out_id !== "string") {
-    return false;
-  } else if (typeof tx_in.tx_out_index !== "number") {
+    console.log("The tx_in appears to be null");
     return false;
   } else if (typeof tx_in.signature !== "string") {
+    console.log("The tx_in doesn't have a valid signature");
+    return false;
+  } else if (typeof tx_in.tx_out_id !== "string") {
+    console.log("The tx_in doesn't have a valid tx_out_id");
+    return false;
+  } else if (typeof tx_in.tx_out_index !== "number") {
+    console.log("The tx_in doesn't have a valid tx_out_index");
     return false;
   } else {
     return true;
@@ -143,20 +150,20 @@ const isTxOutStructureValid = tx_out => {
   }
 };
 
-const isTxStructureValid = () => {
+const isTxStructureValid = tx => {
   if (typeof tx.id !== "string") {
-    console.log("Tx ID is not valid");
+    console.log("The transaction id is not valid");
     return false;
   } else if (!(tx.tx_ins instanceof Array)) {
-    console.log("The txIns are not an array");
+    console.log("The tx_ins are not an array");
     return false;
   } else if (
     !tx.tx_ins.map(isTxInStructureValid).reduce((a, b) => a && b, true)
   ) {
-    console.log("The structure of one of the txIn is not valid");
+    console.log("The structure of one of the tx_ins is not valid");
     return false;
   } else if (!(tx.tx_outs instanceof Array)) {
-    console.log("The txOuts are not an array");
+    console.log("The tx_outs are not an array");
     return false;
   } else if (
     !tx.tx_outs.map(isTxOutStructureValid).reduce((a, b) => a && b, true)
@@ -174,7 +181,8 @@ const validateTxIn = (tx_in, tx, utx_out_list) => {
       utx_o.tx_out_id === tx_in.tx_out_id &&
       utx_o.tx_out_index === tx_in.tx_out_index
   );
-  if (wanted_tx_out === null) {
+  if (wanted_tx_out === undefined) {
+    console.log(`Didn't find the wanted utx_out, the tx: ${tx} is invalid`);
     return false;
   } else {
     const address = wanted_tx_out.address;
@@ -188,10 +196,12 @@ const getAmountInTxIn = (tx_in, utx_out_list) =>
 
 const validateTx = (tx, utx_out_list) => {
   if (!isTxStructureValid(tx)) {
+    console.log("Tx structure is invalid");
     return false;
   }
 
   if (getTxId(tx) !== tx.id) {
+    console.log("Tx ID is not valid");
     return false;
   }
 
@@ -200,6 +210,7 @@ const validateTx = (tx, utx_out_list) => {
   );
 
   if (!has_valid_tx_ins) {
+    console.log(`The tx: ${tx} doesn't have valid tx_ins`);
     return false;
   }
 
@@ -212,6 +223,9 @@ const validateTx = (tx, utx_out_list) => {
     .reduce((a, b) => a + b, 0);
 
   if (amount_in_tx_ins !== amount_in_tx_outs) {
+    console.log(
+      `The tx: ${tx} doesn't have the same amount in the tx_out as in the tx_ins`
+    );
     return false;
   } else {
     return true;
@@ -311,5 +325,6 @@ module.exports = {
   Transaction,
   TxOut,
   createCoinbaseTx,
-  processTxs
+  processTxs,
+  validateTx
 };

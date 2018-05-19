@@ -1,3 +1,3 @@
-# HoYaCoin_JavaScript
+# HoYaCoin\_JavaScript
 
 HoYa's Coin application with JavaScript.

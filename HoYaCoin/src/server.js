@@ -2,6 +2,7 @@ const express = require("express"),
   bodyParser = require("body-parser"),
   morgan = require("morgan"),
   _ = require("lodash"),
+  cors = require("cors"),
   blockchain = require("./blockchain"),
   P2P = require("./p2p"),
   Wallet = require("./wallet"),
@@ -29,6 +30,7 @@ const PORT = process.env.HTTP_PORT || 3000;
 const app = express();
 
 app.use(bodyParser.json());
+app.use(cors());
 app.use(morgan("combined"));
 
 app

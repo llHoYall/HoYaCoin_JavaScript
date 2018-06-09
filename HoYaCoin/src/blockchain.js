@@ -146,7 +146,7 @@ const findBlock = (index, prev_hash, timestamp, data, difficulty) => {
   }
 };
 
-const hashMatchesDifficulty = (hash, difficulty) => {
+const hashMatchesDifficulty = (hash, difficulty = 0) => {
   const hash_in_binary = hexToBinary(hash);
   const required_zeros = "0".repeat(difficulty);
   return hash_in_binary.startsWith(required_zeros);

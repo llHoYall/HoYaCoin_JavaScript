@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const TransactionPresenter = () => "txs";
+const TransactionsPresenter = () => "txs";
 
-export default TransactionPresenter;
+export default TransactionsPresenter;

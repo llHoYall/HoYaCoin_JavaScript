@@ -50,7 +50,7 @@ const ListItem = styled.li`
 const SLink = styled.span`
   text-decoration: none;
   font-weight: 600;
-  color: ${props => (props.isActive ? "black" : "#676767")};
+  color: ${props => (props.is_active ? "black" : "#676767")};
 `;
 
 const HeaderPresenter = props => {
@@ -64,19 +64,19 @@ const HeaderPresenter = props => {
           <List>
             <ListItem>
               <Link to="/">
-                <SLink isActive={window.location.pathname === "/"}>Home</SLink>
+                <SLink is_active={window.location.pathname === "/"}>Home</SLink>
               </Link>
             </ListItem>
             <ListItem>
               <Link to="/blocks">
-                <SLink isActive={window.location.pathname === "/blocks"}>
+                <SLink is_active={window.location.pathname === "/blocks"}>
                   Blocks
                 </SLink>
               </Link>
             </ListItem>
             <ListItem>
               <Link to="/transactions">
-                <SLink isActive={window.location.pathname === "/transactions"}>
+                <SLink is_active={window.location.pathname === "/transactions"}>
                   Transactions
                 </SLink>
               </Link>

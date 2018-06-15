@@ -3,3 +3,7 @@ node_modules/
 
 # Yarn
 *.log
+
+# build & Release
+**/build/*
+**/dist/*

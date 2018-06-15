@@ -114,12 +114,7 @@ app.get("/address/:address", (req, res) => {
   res.send({ balance });
 });
 
-const server = app.listen(PORT, () =>
-  console.log(`HoYaCoin HTTP server running on ${PORT}`)
-);
-
 initWallet();
-startP2PServer(server);
 
 module.exports = {
   startP2PServer,

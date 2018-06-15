@@ -1,9 +1,20 @@
 {
+  "name": "HoYaCoin-Wallet",
+  "productName": "HoYaCoin Wallet",
+  "main": "main.js",
   "scripts": {
-    "start": "electron main.js"
+    "start": "concurrently --kill-others \"yarn run start-react\" \"set ENV=dev&&electron .\"",
+    "start-react": "cd uidev && npm start",
+    "prebuild": "yarn run deleteWallet && cd uidev && npm run build",
+    "build": "electron-packager . --all --prune=false --ignore=/uidev --overwrite --out=dist",
+    "deleteWallet": "del /f /s /q HoYaCoin\\src\\privateKey"
+  },
+  "dependencies": {
+    "get-port": "^3.2.0"
   },
   "devDependencies": {
     "concurrently": "^3.5.1",
-    "electron": "^2.0.2"
+    "electron": "^2.0.2",
+    "electron-packager": "^12.1.0"
   }
 }
